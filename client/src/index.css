@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+/* Focused SVG nodes draw their own ring (see NeighborhoodGraph): a focused
+   <g> becomes document.activeElement but does not reliably match CSS :focus
+   in Chromium, so the ring is driven by React state instead. */
+svg [role="button"] {
+  outline: none;
+}

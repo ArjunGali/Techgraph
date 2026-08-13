@@ -1,0 +1,23 @@
+{
+  "name": "techgraph-server",
+  "version": "1.0.0",
+  "description": "TechGraph REST API — Express backend over CognoDB (Neo4j-compatible graph database)",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "start": "node index.js",
+    "seed": "node seed/seed.js",
+    "test:queries": "node scripts/test-queries.js",
+    "test:api": "node scripts/test-api.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "neo4j-driver": "^5.28.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

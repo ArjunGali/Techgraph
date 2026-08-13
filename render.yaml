@@ -1,0 +1,21 @@
+# Render blueprint for the TechGraph API.
+# Secrets are marked sync:false so Render prompts for them in the dashboard —
+# credentials are never stored in this repository.
+services:
+  - type: web
+    name: techgraph-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: COGNODB_URI
+        sync: false
+      - key: COGNODB_USERNAME
+        sync: false
+      - key: COGNODB_PASSWORD
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
