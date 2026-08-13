@@ -6,8 +6,13 @@ TechGraph models skills, technologies, concepts, jobs, companies and courses as 
 graph in **CognoDB**, then answers questions that are fundamentally about
 *connections* rather than rows.
 
-- 🔗 **Live demo:** _(add after deployment)_
-- ⚙️ **API health:** _(add after deployment)_
+- 🔗 **Live demo:** <https://techgraph-seven.vercel.app/>
+- ⚙️ **Backend API:** <https://techgraph-api.onrender.com/>
+- ❤️ **API health:** <https://techgraph-api.onrender.com/api/health>
+- 📦 **Repository:** <https://github.com/ArjunGali/techgraph>
+
+> The backend runs on Render's free tier, which sleeps after inactivity — the
+> first request after an idle period can take up to ~50 seconds to wake.
 
 ---
 
