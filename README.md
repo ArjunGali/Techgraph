@@ -398,7 +398,8 @@ All endpoints are read-only `GET`s returning JSON. Errors return
 
 | Endpoint | Capability |
 |---|---|
-| `/api/health` | Liveness + database connectivity (`connected` / `not_configured` / `unreachable`) |
+| `/api/live` | Liveness only — always 200 while the process is serving; performs no database call. Used by the platform health check |
+| `/api/health` | Liveness + database connectivity (`connected` / `not_configured` / `unreachable`); 503 when the database is unreachable |
 | `/api/search?q=py` | Case-insensitive entity search across all labels |
 | `/api/stats` | Dashboard statistics (live counts, most-required skills) |
 | `/api/entities/:label/:name` | Entity lookup by unambiguous (label, name) |
@@ -503,7 +504,7 @@ in the hosting platform's dashboard, never in the repository.
 | Suite | Command | Result |
 |---|---|---|
 | Query layer (live database) | `npm run test:queries` | **14 passed, 0 failed** |
-| REST API (over HTTP) | `npm run test:api` | **31 passed, 0 failed** |
+| REST API (over HTTP) | `npm run test:api` | **33 passed, 0 failed** |
 | Frontend production build | `npm run build` | ✅ 272 kB JS / 84.6 kB gzip |
 | Health check | `curl localhost:4000/api/health` | `{"status":"ok","service":"techgraph-api","database":"connected"}` |
 
@@ -573,7 +574,7 @@ to read, explain and defend.
 | Root directory | `server` |
 | Build command | `npm install` |
 | Start command | `npm start` |
-| Health check path | `/api/health` |
+| Health check path | `/api/live` |
 | Environment | `COGNODB_URI`, `COGNODB_USERNAME`, `COGNODB_PASSWORD`, `CLIENT_ORIGIN` |
 
 `render.yaml` in the repository root describes this as a blueprint; every secret is

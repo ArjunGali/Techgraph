@@ -9,7 +9,10 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /api/health
+    # Liveness only. /api/health also checks CognoDB and returns 503 when the
+    # database is unreachable — using it here would let a database blip
+    # deregister a healthy API and take every route offline.
+    healthCheckPath: /api/live
     envVars:
       - key: COGNODB_URI
         sync: false

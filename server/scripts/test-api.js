@@ -77,6 +77,12 @@ try {
   await waitForServer(live('/health'));
 
   console.log('--- happy paths -------------------------------------------');
+  await check('GET /live (liveness, no database call)', live('/live'), 200, (b) => {
+    assert(b.status === 'ok', `expected status ok, got ${b.status}`);
+    assert(b.service === 'techgraph-api', `expected service techgraph-api, got ${b.service}`);
+    assert(!('database' in b), 'liveness must not report database state');
+    return `status: ${b.status}, service: ${b.service}`;
+  });
   await check('GET /health', live('/health'), 200, (b) => {
     assert(b.database === 'connected', `database should be connected, got ${b.database}`);
     return `database: ${b.database}`;
@@ -238,7 +244,13 @@ try {
     console.log('SKIP  requires a locally spawned server wired to a dead database URI');
   } else {
     console.log('--- database unavailable → 503 (simulated safely) ---------');
-    await waitForServer(dead('/health'));
+    await waitForServer(dead('/live'));
+    // The point of the split: liveness stays 200 while the database is down,
+    // so the platform health check keeps the instance in rotation.
+    await check('GET /live (dead DB) stays 200', dead('/live'), 200, (b) => {
+      assert(b.status === 'ok', `expected status ok, got ${b.status}`);
+      return `status: ${b.status} — instance stays in rotation`;
+    });
     await check('GET /health (dead DB)', dead('/health'), 503, (b) => {
       assert(b.database === 'unreachable', `expected unreachable, got ${b.database}`);
       return `database: ${b.database}`;

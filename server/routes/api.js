@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { health } from '../controllers/health.controller.js';
+import { live, health } from '../controllers/health.controller.js';
 import * as explore from '../controllers/explore.controller.js';
 import * as career from '../controllers/career.controller.js';
 import * as paths from '../controllers/paths.controller.js';
@@ -8,7 +8,8 @@ import { careerBuilder } from '../controllers/builder.controller.js';
 // Routes only map URLs to controllers — no logic lives here.
 const router = Router();
 
-router.get('/health', health);
+router.get('/live', live);     // liveness only — used by the platform health check
+router.get('/health', health); // liveness + database dependency status
 
 // Explorer / Dashboard
 router.get('/search', explore.search);
