@@ -12,3 +12,12 @@ dist/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# PG Management
+pg-management/node_modules/
+pg-management/*/node_modules/
+pg-management/server/dist/
+pg-management/server/storage/
+pg-management/web/.next/
+pg-management/web/out/
+pg-management/android/
