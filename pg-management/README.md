@@ -138,10 +138,16 @@ Full instructions, including production deployment: [docs/INSTALLATION.md](docs/
 
 ## Building the Android APK
 
+Locally, with the Android SDK installed:
+
 ```bash
 npm run android:debug     # debug APK, for testing
 npm run android:release   # signed release APK, for distribution
 ```
+
+Without the SDK, let CI do it: **Actions → Build PG Management APK → Run
+workflow**, then download the `pg-management-apk` artifact from the finished
+run.
 
 Keystore creation, signing, verification and troubleshooting:
 [docs/ANDROID_BUILD.md](docs/ANDROID_BUILD.md).

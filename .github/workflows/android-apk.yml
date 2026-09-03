@@ -1,0 +1,158 @@
+name: Build PG Management APK
+
+# Builds the single APK that serves both phones and tablets, and attaches it to
+# the run as a downloadable artifact.
+#
+# This exists because the APK cannot be built without Google's Maven repository
+# and the Android SDK. GitHub's runners have both preinstalled, so the build
+# runs here rather than on a developer machine.
+
+on:
+  # "Run workflow" in the Actions tab, with the API address as an input.
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: 'API address the app should talk to (https:// for release builds)'
+        required: true
+        default: 'http://10.0.2.2:4000'
+      build_type:
+        description: 'Which APK to build'
+        required: true
+        default: 'debug'
+        type: choice
+        options: [debug, release]
+
+  push:
+    branches:
+      - 'claude/pg-management-android-apk-**'
+    paths:
+      - 'pg-management/**'
+      - '.github/workflows/android-apk.yml'
+
+# Only the newest run per branch needs to finish.
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pg-management
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: pg-management/package-lock.json
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('pg-management/android/**/*.gradle', 'pg-management/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run the calculation engine tests
+        # The engine decides what every tenant is charged, so a failure here
+        # stops the build before an APK is produced.
+        run: npm test --workspace server
+
+      - name: Build the web client
+        env:
+          # Compiled into the APK. It is only an address — no credential is
+          # ever built into the package. It can also be changed on the device
+          # under "Server settings" on the sign-in screen.
+          NEXT_PUBLIC_API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://10.0.2.2:4000' }}
+        run: npm run build:web
+
+      - name: Sync the web build into the Android project
+        run: npx cap sync android
+
+      - name: Decode the release keystore
+        # Skipped unless the repository has signing secrets. Without them the
+        # release build would produce an unsigned, uninstallable APK, so the
+        # workflow falls back to a debug build instead.
+        id: keystore
+        # A step's own `env:` is not available to its `if:`, so the secret is
+        # tested directly here.
+        if: ${{ github.event.inputs.build_type == 'release' && secrets.PG_KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.PG_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "path=$RUNNER_TEMP/release.jks" >> "$GITHUB_OUTPUT"
+
+      - name: Build the APK
+        env:
+          PG_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
+          PG_KEYSTORE_PASSWORD: ${{ secrets.PG_KEYSTORE_PASSWORD }}
+          PG_KEYSTORE_ALIAS: ${{ secrets.PG_KEYSTORE_ALIAS }}
+          PG_KEY_PASSWORD: ${{ secrets.PG_KEY_PASSWORD }}
+        working-directory: pg-management/android
+        run: |
+          if [ -n "${{ steps.keystore.outputs.path }}" ]; then
+            echo "Building a signed release APK."
+            ./gradlew --no-daemon assembleRelease
+          else
+            if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+              echo "::warning::No signing secrets configured, so an unsigned release APK could not be installed. Building the debug APK instead — it is signed with Android's debug key and installs directly."
+            fi
+            ./gradlew --no-daemon assembleDebug
+          fi
+
+      - name: Find the APK
+        id: apk
+        run: |
+          apk=$(find android/app/build/outputs/apk -name '*.apk' -not -name '*unsigned*' | head -1)
+          if [ -z "$apk" ]; then
+            echo "::error::No APK was produced."
+            exit 1
+          fi
+          echo "path=$apk" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$apk")" >> "$GITHUB_OUTPUT"
+          ls -lh "$apk"
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pg-management-apk
+          path: pg-management/${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          {
+            echo "## PG Management APK"
+            echo
+            echo "**Download:** the \`pg-management-apk\` artifact at the bottom of this run's summary page."
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| File | \`${{ steps.apk.outputs.name }}\` |"
+            echo "| Size | $(du -h "${{ steps.apk.outputs.path }}" | cut -f1) |"
+            echo "| API address | \`${{ github.event.inputs.api_base_url || 'http://10.0.2.2:4000' }}\` |"
+            echo
+            echo "Install with \`adb install -r <file>.apk\`, or copy it to the device and open it."
+            echo "One APK covers phones and tablets — the layout adapts to the screen it is on."
+          } >> "$GITHUB_STEP_SUMMARY"

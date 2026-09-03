@@ -8,6 +8,45 @@ between them live when the device is rotated or put into a split-screen window.
 
 ---
 
+## Quickest route: let GitHub build it
+
+If you do not have the Android SDK installed, the repository builds the APK for
+you and attaches it to the run as a download.
+
+1. Open the repository's **Actions** tab.
+2. Choose **Build PG Management APK** in the left-hand list.
+3. Click **Run workflow**, set **API address** to wherever your API is reachable
+   from the device, and run it.
+4. When it finishes, open the run and download the **pg-management-apk**
+   artifact from the bottom of the summary page. It unzips to the APK.
+
+The workflow builds a **debug** APK by default. That is signed with Android's
+standard debug key, so it installs straight away — which is what you want for
+testing. Choosing **release** produces a signed release APK, but only if the
+repository has the signing secrets below; without them the workflow falls back
+to the debug build rather than handing you an unsigned APK that cannot install.
+
+| Secret | Contents |
+|---|---|
+| `PG_KEYSTORE_BASE64` | The `.jks` keystore, base64-encoded (`base64 -w0 release.jks`) |
+| `PG_KEYSTORE_PASSWORD` | Keystore password |
+| `PG_KEYSTORE_ALIAS` | Key alias |
+| `PG_KEY_PASSWORD` | Key password |
+
+Add them under **Settings → Secrets and variables → Actions**. See step 4.1
+below for creating the keystore in the first place.
+
+To install the downloaded APK:
+
+```bash
+adb install -r app-debug.apk
+```
+
+Or copy the file to the device and open it — Android will ask you to allow
+installation from that source.
+
+---
+
 ## What you need
 
 | Tool | Version | Notes |
