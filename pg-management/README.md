@@ -179,8 +179,16 @@ paint so a dark-mode device never flashes white on launch.
 ## Tests
 
 ```bash
-npm test                                    # calculation engine, no database
-npm run test:integration --workspace server # workflows, against real PostgreSQL
+# Calculation engine — pure, needs no database
+npm test
+
+# Workflows — against a real PostgreSQL database.
+# Uses a throwaway database and truncates it between suites, so point it
+# somewhere disposable.
+createdb pg_management_test
+cp server/.env.test.example server/.env.test   # then edit DATABASE_URL
+DATABASE_URL=postgresql://…/pg_management_test npm run migrate --workspace server
+npm run test:integration --workspace server
 ```
 
 **102 tests.** 67 cover the calculation engine — the specification's worked

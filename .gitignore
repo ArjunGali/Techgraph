@@ -32,3 +32,5 @@ pg-management/android/app/release/
 pg-management/android/keystore.properties
 *.keystore
 *.jks
+pg-management/server/.env.test
+pg-management/server/storage-test/
