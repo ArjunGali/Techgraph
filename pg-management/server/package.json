@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "PG Management backend API — the only component that talks to PostgreSQL.",
+  "description": "PG Management backend API \u2014 the only component that talks to PostgreSQL.",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -13,7 +13,9 @@
     "migrate": "tsx src/db/migrate.ts up",
     "migrate:status": "tsx src/db/migrate.ts status",
     "seed": "tsx src/db/seed/index.ts",
-    "test": "tsx --test \"src/**/*.test.ts\"",
+    "test": "tsx --test \"src/calc/**/*.test.ts\"",
+    "test:integration": "tsx --test --test-concurrency=1 \"src/tests/**/*.test.ts\"",
+    "test:all": "npm run test && npm run test:integration",
     "test:calc": "tsx --test \"src/calc/**/*.test.ts\""
   },
   "dependencies": {

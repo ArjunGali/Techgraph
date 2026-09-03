@@ -266,10 +266,13 @@ export async function generateBillsForPeriod(
     // Approved payments already banked against this month's bill are carried
     // through, so regenerating never resets what a tenant has paid.
     const { rows: paidRows } = await db.query<{ paid: number }>(
+      // Same rule as refreshBillTotals: a reversed entry and its contra entry
+      // are both counted, so they net to zero rather than subtracting twice.
       `SELECT coalesce(sum(p.direction * coalesce(p.approved_amount_paise, p.amount_paise)), 0)::bigint AS paid
          FROM payments p
          JOIN bills b ON b.id = p.bill_id
-        WHERE b.billing_period_id = $1 AND p.tenant_id = $2 AND p.state = 'approved'`,
+        WHERE b.billing_period_id = $1 AND p.tenant_id = $2
+          AND p.state IN ('approved', 'reversed')`,
       [period.id, tenantId],
     );
     const paidPaise = Number(paidRows[0]?.paid ?? 0);
@@ -369,8 +372,14 @@ export async function refreshBillTotals(db: Db, billId: string): Promise<void> {
             END,
             updated_at = now()
        FROM (
+         -- A reversal does not erase the payment it cancels: the original entry
+         -- stays on the ledger and a contra entry with the opposite direction is
+         -- posted beside it. Both must be summed, or the reversal would be
+         -- counted twice — once by dropping the original and once by the contra
+         -- entry — and the balance would be wrong by the amount reversed.
          SELECT coalesce(sum(p.direction * coalesce(p.approved_amount_paise, p.amount_paise)), 0)::bigint AS paid
-           FROM payments p WHERE p.bill_id = $1 AND p.state = 'approved'
+           FROM payments p
+          WHERE p.bill_id = $1 AND p.state IN ('approved', 'reversed')
        ) ledger,
        (
          SELECT count(*)::int AS count FROM payments p
