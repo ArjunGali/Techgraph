@@ -17,10 +17,13 @@ if (hasKeystoreFile) {
 }
 
 def signingValue = { String propertyKey, String environmentKey ->
-    if (hasKeystoreFile && keystoreProperties[propertyKey] != null) {
-        return keystoreProperties[propertyKey]
-    }
-    return System.getenv(environmentKey)
+    def value = (hasKeystoreFile && keystoreProperties[propertyKey] != null)
+            ? keystoreProperties[propertyKey]
+            : System.getenv(environmentKey)
+    // A blank value means "not configured", not "configured as empty". CI
+    // exposes an unset secret as an empty string rather than leaving the
+    // variable unset, and file('') throws, so blanks are normalised to null.
+    return (value == null || value.toString().trim().isEmpty()) ? null : value.toString().trim()
 }
 
 def releaseStoreFile = signingValue('storeFile', 'PG_KEYSTORE_PATH')
