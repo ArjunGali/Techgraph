@@ -13,10 +13,10 @@
     "migrate": "tsx src/db/migrate.ts up",
     "migrate:status": "tsx src/db/migrate.ts status",
     "seed": "tsx src/db/seed/index.ts",
-    "test": "tsx --test \"src/calc/**/*.test.ts\"",
-    "test:integration": "tsx --test --test-concurrency=1 \"src/tests/**/*.test.ts\"",
+    "test": "tsx --test src/calc/*.test.ts",
+    "test:integration": "tsx --test --test-concurrency=1 src/tests/*.test.ts",
     "test:all": "npm run test && npm run test:integration",
-    "test:calc": "tsx --test \"src/calc/**/*.test.ts\""
+    "test:calc": "tsx --test src/calc/*.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
