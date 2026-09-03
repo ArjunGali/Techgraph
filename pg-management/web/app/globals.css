@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens.
+ *
+ * Every colour in the app resolves through these, so light and dark are one
+ * set of components with two palettes rather than two sets of styles. The
+ * theme is applied by a `data-theme` attribute on <html>, which the theme
+ * provider sets from the stored preference or the device setting.
+ */
+:root {
+  --surface: 248 250 252;
+  --surface-raised: 255 255 255;
+  --surface-sunken: 241 245 249;
+  --border: 226 232 240;
+  --content: 15 23 42;
+  --content-muted: 100 116 139;
+  --brand: 29 78 216;
+  --brand-contrast: 255 255 255;
+  --positive: 21 128 61;
+  --caution: 180 83 9;
+  --critical: 190 18 60;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --surface: 2 6 23;
+  --surface-raised: 15 23 42;
+  --surface-sunken: 30 41 59;
+  --border: 51 65 85;
+  --content: 241 245 249;
+  --content-muted: 148 163 184;
+  --brand: 96 165 250;
+  --brand-contrast: 2 6 23;
+  --positive: 74 222 128;
+  --caution: 251 191 36;
+  --critical: 251 113 133;
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    /* Stops Android WebView inflating text and breaking the layout maths. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface text-content antialiased;
+    /* The app fills the device; only panes scroll, so the shell never bounces. */
+    overscroll-behavior-y: none;
+  }
+
+  /* A native app should not show a text caret on things that are not fields. */
+  button,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+}
+
+@layer utilities {
+  /* Horizontal scrolling is never allowed on the page itself; wide content
+     scrolls inside its own container. */
+  .scroll-x {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}

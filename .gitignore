@@ -12,3 +12,25 @@ dist/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# PG Management
+pg-management/node_modules/
+pg-management/*/node_modules/
+pg-management/server/dist/
+pg-management/server/storage/
+pg-management/web/.next/
+pg-management/web/out/
+
+# Android build output (the android/ project itself is tracked)
+pg-management/android/build/
+pg-management/android/app/build/
+pg-management/android/.gradle/
+pg-management/android/capacitor-cordova-android-plugins/build/
+pg-management/android/local.properties
+pg-management/android/app/src/main/assets/public/
+pg-management/android/app/release/
+pg-management/android/keystore.properties
+*.keystore
+*.jks
+pg-management/server/.env.test
+pg-management/server/storage-test/
