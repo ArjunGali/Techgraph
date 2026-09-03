@@ -230,6 +230,24 @@ pg-management/
 
 ---
 
+## Single-user mode
+
+The owner runs this on their own phone, so the app signs itself in on launch and
+opens on the dashboard. There is no sign-in screen in normal use.
+
+Authentication is not switched off by this. The server still authenticates every
+request, still enforces role permissions, and still records who did what — the
+app simply stops asking the owner to prove who they are on their own device. The
+credentials are compiled into the APK, so **treat the APK as sensitive**, and
+leave `NEXT_PUBLIC_AUTO_LOGIN_EMAIL` and `NEXT_PUBLIC_AUTO_LOGIN_PASSWORD` blank
+to get the ordinary sign-in screen back.
+
+A screen appears before the dashboard only when something needs attention: the
+server cannot be reached (it asks for the address, nothing else), or the built-in
+credentials were refused (it asks someone to sign in).
+
+---
+
 ## Security
 
 - Authentication on every endpoint; there is no unauthenticated view of anything.

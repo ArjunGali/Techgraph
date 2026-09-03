@@ -21,6 +21,14 @@ on:
         default: 'debug'
         type: choice
         options: [debug, release]
+      auto_login_email:
+        description: 'Sign in automatically as this user (blank shows the sign-in screen)'
+        required: false
+        default: 'admin@pgmanagement.local'
+      auto_login_password:
+        description: 'Password for automatic sign-in. Prefer the PG_AUTO_LOGIN_PASSWORD secret — a value typed here is visible in the run log.'
+        required: false
+        default: ''
 
   push:
     branches:
@@ -88,6 +96,11 @@ jobs:
           # ever built into the package. It can also be changed on the device
           # under "Server settings" on the sign-in screen.
           NEXT_PUBLIC_API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://10.0.2.2:4000' }}
+          # Single-user mode: the app signs itself in and opens on the dashboard.
+          # The secret wins over the workflow input, so a real password never has
+          # to be typed into a field that is recorded in the run log.
+          NEXT_PUBLIC_AUTO_LOGIN_EMAIL: ${{ github.event.inputs.auto_login_email || 'admin@pgmanagement.local' }}
+          NEXT_PUBLIC_AUTO_LOGIN_PASSWORD: ${{ secrets.PG_AUTO_LOGIN_PASSWORD || github.event.inputs.auto_login_password || 'ChangeMe!2026' }}
         run: npm run build:web
 
       - name: Sync the web build into the Android project

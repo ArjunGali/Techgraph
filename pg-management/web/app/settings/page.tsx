@@ -3,7 +3,7 @@
 import { AppShell } from '@/components/AppShell';
 import { Button, Card, Field, SectionHeading, Select, cx } from '@/components/ui';
 import { useTheme, type ThemePreference } from '@/lib/theme';
-import { useAuth } from '@/lib/auth';
+import { useAuth, autoLoginConfigured } from '@/lib/auth';
 import { getBaseUrl } from '@/lib/api';
 import { useApiQuery } from '@/lib/useApi';
 
@@ -45,6 +45,12 @@ export default function SettingsPage() {
               <Button variant="secondary" fullWidth onClick={signOut}>
                 Sign out
               </Button>
+              {autoLoginConfigured ? (
+                <p className="mt-2 text-xs text-content-muted">
+                  This app signs itself in automatically. Signing out returns you to the sign-in
+                  screen for now; the next time you open the app it will sign in again on its own.
+                </p>
+              ) : null}
             </div>
           </Card>
         </section>
