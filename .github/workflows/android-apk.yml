@@ -35,7 +35,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  # Needed to publish the APK as a release asset.
+  contents: write
 
 jobs:
   build:
@@ -140,12 +141,70 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Publish the APK as a release asset
+        # A workflow artifact needs a GitHub login and arrives as a zip, which
+        # is awkward on a phone. A release asset is a direct .apk link anyone
+        # can tap, and it does not expire after 30 days.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_PATH: ${{ steps.apk.outputs.path }}
+          APK_NAME: ${{ steps.apk.outputs.name }}
+          API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://10.0.2.2:4000' }}
+        run: |
+          set -euo pipefail
+
+          case "$APK_NAME" in
+            *release*) variant=release ;;
+            *)         variant=debug ;;
+          esac
+          asset="pg-management-${variant}.apk"
+          cp "$APK_PATH" "$asset"
+
+          # A fixed tag, replaced on every build, so the download URL never
+          # changes and can be shared once.
+          tag="apk-latest"
+
+          {
+            echo "Built from \`${GITHUB_SHA:0:7}\` on \`${GITHUB_REF_NAME}\`."
+            echo
+            echo "**One APK for phones and tablets** - the layout adapts to the screen it is on."
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Build | \`${variant}\` |"
+            echo "| API address compiled in | \`${API_BASE_URL}\` |"
+            echo
+            echo "### Installing"
+            echo
+            echo "Download \`${asset}\` below and open it on the device, or run \`adb install -r ${asset}\`."
+            echo "Android will ask you to allow installs from this source."
+            echo
+            echo "### Pointing it at your server"
+            echo
+            echo "You do **not** need a new build. On the sign-in screen tap **Server settings**"
+            echo "and enter your API address. The app holds no database credentials - it talks to"
+            echo "the PG Management API, which decides what your account may see."
+            echo
+            echo "This is a pre-release build for testing. Delete this release whenever you like;"
+            echo "the next run recreates it."
+          } > release-notes.md
+
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" "$asset" \
+            --title "PG Management APK (latest ${variant} build)" \
+            --prerelease \
+            --notes-file release-notes.md
+
+          echo "Published: $(gh release view "$tag" --json url --jq .url)"
+
       - name: Summary
         run: |
           {
             echo "## PG Management APK"
             echo
-            echo "**Download:** the \`pg-management-apk\` artifact at the bottom of this run's summary page."
+            echo "**Download:** <https://github.com/${{ github.repository }}/releases/tag/apk-latest> — a direct .apk, no login needed."
+            echo
+            echo "Also attached to this run as the \`pg-management-apk\` artifact."
             echo
             echo "| | |"
             echo "|---|---|"
