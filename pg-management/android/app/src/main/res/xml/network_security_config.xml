@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network policy for the release build.
+
+  Cleartext HTTP is refused outright: the app carries financial records and
+  identity documents, so every call to the API must be over TLS. The debug
+  build overlays this file with a permissive version so a developer can point
+  the app at a local server during development.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

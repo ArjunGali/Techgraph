@@ -1,0 +1,142 @@
+apply plugin: 'com.android.application'
+
+/*
+ * Release signing.
+ *
+ * Credentials are never committed. They are read from android/keystore.properties
+ * (git-ignored) if it exists, otherwise from the environment, so the same build
+ * file works for a developer on a laptop and for a CI runner using secrets.
+ * If neither is present, the release build still assembles but stays unsigned —
+ * `assembleDebug` and CI checks keep working without a keystore.
+ */
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def keystoreProperties = new Properties()
+def hasKeystoreFile = keystorePropertiesFile.exists()
+if (hasKeystoreFile) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def signingValue = { String propertyKey, String environmentKey ->
+    if (hasKeystoreFile && keystoreProperties[propertyKey] != null) {
+        return keystoreProperties[propertyKey]
+    }
+    return System.getenv(environmentKey)
+}
+
+def releaseStoreFile = signingValue('storeFile', 'PG_KEYSTORE_PATH')
+def releaseStorePassword = signingValue('storePassword', 'PG_KEYSTORE_PASSWORD')
+def releaseKeyAlias = signingValue('keyAlias', 'PG_KEYSTORE_ALIAS')
+def releaseKeyPassword = signingValue('keyPassword', 'PG_KEY_PASSWORD')
+def canSignRelease = releaseStoreFile != null && releaseStorePassword != null &&
+        releaseKeyAlias != null && releaseKeyPassword != null
+
+android {
+    namespace "com.pgmanagement.app"
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.pgmanagement.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (canSignRelease) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                // Both signature schemes, so the APK installs on Android 7
+                // through the current release.
+                v1SigningEnabled true
+                v2SigningEnabled true
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+            // Installs alongside a release build, so a tester can compare the
+            // two on one device.
+            minifyEnabled false
+        }
+
+        release {
+            // Shrinks and obfuscates. The Capacitor bridge and the plugin
+            // entry points are kept by proguard-rules.pro.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            if (canSignRelease) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.lifecycle(
+                    'PG Management: no signing credentials found. The release APK will be ' +
+                    'unsigned — see docs/ANDROID_BUILD.md to configure a keystore.')
+            }
+        }
+    }
+
+    // One APK for every device. No ABI or density splits: the whole point is
+    // that a single artefact runs on phones and tablets alike.
+    bundle {
+        density { enableSplit = false }
+        abi { enableSplit = false }
+        language { enableSplit = false }
+    }
+
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+
+    lint {
+        // A lint warning should not block a release build in CI.
+        abortOnError false
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

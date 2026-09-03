@@ -20,4 +20,15 @@ pg-management/server/dist/
 pg-management/server/storage/
 pg-management/web/.next/
 pg-management/web/out/
-pg-management/android/
+
+# Android build output (the android/ project itself is tracked)
+pg-management/android/build/
+pg-management/android/app/build/
+pg-management/android/.gradle/
+pg-management/android/capacitor-cordova-android-plugins/build/
+pg-management/android/local.properties
+pg-management/android/app/src/main/assets/public/
+pg-management/android/app/release/
+pg-management/android/keystore.properties
+*.keystore
+*.jks

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PG Management</string>
+    <string name="title_activity_main">PG Management</string>
+    <string name="package_name">com.pgmanagement.app</string>
+    <string name="custom_url_scheme">com.pgmanagement.app</string>
+</resources>
