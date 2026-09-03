@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useLayoutShape } from '@/lib/useMediaQuery';
+import { useElementWidth, useLayoutShape } from '@/lib/useMediaQuery';
 
 /** Joins class names, dropping anything falsy. */
 export function cx(...values: (string | false | null | undefined)[]): string {
@@ -327,16 +327,28 @@ export function DataTable<T>({
   onRowClick?: (row: T) => void;
   empty?: ReactNode;
 }) {
+  // Measured against the container, not the window: the same table renders as
+  // cards inside a narrow master pane on a tablet and as a full table when it
+  // has the page to itself, without either arrangement being clipped.
+  const [ref, width] = useElementWidth<HTMLElement>();
+
+  // Until the first measurement lands, fall back to the viewport shape so the
+  // first paint is not a flash of the wrong arrangement.
   const { isTablet, isWide } = useLayoutShape();
+  const measured = width > 0;
+  const asTable = measured ? width >= 560 : isTablet;
+  const showWideColumns = measured ? width >= 860 : isWide;
 
-  if (rows.length === 0) return <>{empty ?? <EmptyState title="Nothing to show" />}</>;
+  if (rows.length === 0) {
+    return <div ref={ref}>{empty ?? <EmptyState title="Nothing to show" />}</div>;
+  }
 
-  if (!isTablet) {
+  if (!asTable) {
     const primary = columns.find((column) => column.primary) ?? columns[0]!;
     const rest = columns.filter((column) => column !== primary && !column.wideOnly);
 
     return (
-      <ul className="space-y-2">
+      <ul ref={ref} className="space-y-2">
         {rows.map((row) => (
           <li key={keyOf(row)}>
             <button
@@ -363,10 +375,10 @@ export function DataTable<T>({
     );
   }
 
-  const visible = columns.filter((column) => isWide || !column.wideOnly);
+  const visible = columns.filter((column) => showWideColumns || !column.wideOnly);
 
   return (
-    <div className="scroll-x rounded-xl border border-border">
+    <div ref={ref} className="scroll-x rounded-xl border border-border">
       <table className="w-full min-w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border bg-surface-sunken">

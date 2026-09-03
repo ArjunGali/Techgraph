@@ -64,3 +64,32 @@ export function useLayoutShape(): {
     isLandscape,
   };
 }
+
+/**
+ * Measures the element a ref is attached to.
+ *
+ * Viewport width is the wrong question for a component sitting inside a pane:
+ * a table in the left half of a 1280px tablet has about 600px to work with,
+ * not 1280. Components that can appear in more than one place ask this instead,
+ * so they lay out for the space they actually have.
+ */
+export function useElementWidth<T extends HTMLElement>(): [
+  (element: T | null) => void,
+  number,
+] {
+  const [width, setWidth] = useState(0);
+  const [element, setElement] = useState<T | null>(null);
+
+  useEffect(() => {
+    if (!element) return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    setWidth(element.getBoundingClientRect().width);
+    return () => observer.disconnect();
+  }, [element]);
+
+  return [setElement, width];
+}
